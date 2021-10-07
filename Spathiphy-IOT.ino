@@ -5,22 +5,27 @@
 #define DHT22_PIN D0
 
 DHTStable DHT;
-BH1750 LUX(0x23);
+BH1750 LUX(0x1D);
 
 void setup()
 {
+  pinMode(LED_BUILTIN, OUTPUT);
+  delay(500);
   Wire.begin(D2, D1);
   Serial.begin(9600);
   Serial.println("Sensors starting");
-  if (LUX.begin()) 
-  {
-    Serial.println("BH1750 initialised");
-  }
-  else
+
+  while(!LUX.begin())
   {
     Serial.println("Error initialising BH1750");
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(500);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(500);
   }
 
+  Serial.println("BH1750 initialised");
+  digitalWrite(LED_BUILTIN, HIGH);
 }
 
 void loop()
