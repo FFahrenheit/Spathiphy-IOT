@@ -25,7 +25,6 @@ void setup()
   }
 
   Serial.println("BH1750 initialised");
-  digitalWrite(LED_BUILTIN, HIGH);
 }
 
 void loop()
@@ -34,6 +33,18 @@ void loop()
   float hum = DHT.getHumidity();
   float temp = DHT.getTemperature();
   float light = LUX.readLightLevel();//Realizamos una lectura del sensor
-  Serial.println("Temperatura: " + String(temp) + "\tHumedad: " + String(hum) + "%\t\tLuminosidad: " + String(light));  
-  delay(2000);
+  Serial.println("Temperatura: " + String(temp) + "°C\t\tHumedad: " + String(hum) + "%\t\tLuminosidad: " + String(light) + "lx");  
+  blink();
+}
+
+void blink()
+{
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(50);
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(50);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(50);
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(1850);
 }
