@@ -1,5 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
+#include <ESP8266HTTPClient.h>
 #include "DHTStable.h"
 #include <Wire.h>
 #include <BH1750.h>
@@ -12,6 +13,7 @@ char *redes[2][2] = {
 };
 
 ESP8266WiFiMulti wifiMulti;
+WiFiClient wifiClient;
 
 DHTStable DHT;
 BH1750 LUX(0x1D);
@@ -21,7 +23,7 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   delay(500);
   Wire.begin(D2, D1);
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println("Sensors starting");
 
   while(!LUX.begin())
@@ -59,6 +61,8 @@ void setup()
   Serial.println(WiFi.SSID());              
   Serial.print("IP address:\t");
   Serial.println(WiFi.localIP());
+
+  testHTTP();
 }
 
 void loop()
@@ -81,4 +85,20 @@ void blink()
   delay(50);
   digitalWrite(LED_BUILTIN, HIGH);
   delay(1850);
+}
+
+void testHTTP(){
+  HTTPClient http;
+
+  http.begin(wifiClient, "http://jsonplaceholder.typicode.com/users/1");  //Specify request destination
+  int httpCode = http.GET();                                  //Send the request
+ 
+  if (httpCode > 0) { //Check the returning code
+ 
+    String payload = http.getString();   //Get the request response payload
+    Serial.println(payload);             //Print the response payload
+ 
+  }
+ 
+  http.end();   //Close connection
 }
