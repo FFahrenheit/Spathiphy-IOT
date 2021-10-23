@@ -1,12 +1,17 @@
 #include <ESP8266WiFi.h>
+#include <ESP8266WiFiMulti.h>
 #include "DHTStable.h"
 #include <Wire.h>
 #include <BH1750.h>
 
 #define DHT22_PIN D0
 
-const char * ssid = "TheCoolestWiFiLM";
-const char * password = "LopezMurillo128";
+char *redes[2][2] = {
+  {"TheCoolestWiFiLM", "LopezMurillo128"},
+  {"WifiLM", "LopezMurillo128"}
+};
+
+ESP8266WiFiMulti wifiMulti;
 
 DHTStable DHT;
 BH1750 LUX(0x1D);
@@ -30,19 +35,30 @@ void setup()
 
   Serial.println("BH1750 initialised");
 
-  WiFi.begin(ssid, password);
-  Serial.print("Connecting to ");
-  Serial.print(ssid); Serial.println(" ...");
-  int i = 0;
-    while (WiFi.status() != WL_CONNECTED) { // Wait for the Wi-Fi to connect
-    delay(1000);
-    Serial.print(++i); Serial.print(' ');
+  WiFi.mode(WIFI_STA);
+  WiFi.disconnect();
+  for(auto red : redes){
+    Serial.print("SSID: ");
+    Serial.print(red[0]);
+    Serial.print("\t\tPassword: ");
+    Serial.println(red[1]);
+
+    wifiMulti.addAP(red[0], red[1]);
   }
 
+  Serial.println("Connecting to WiFi...");
+  int i = 0;
+
+  while (wifiMulti.run() != WL_CONNECTED) {
+    delay(1250);
+    Serial.print(++i); Serial.print(' ');
+  }
+  
   Serial.println('\n');
-  Serial.println("Connection established!");  
+  Serial.print("Connected to ");
+  Serial.println(WiFi.SSID());              
   Serial.print("IP address:\t");
-  Serial.println(WiFi.localIP()); 
+  Serial.println(WiFi.localIP());
 }
 
 void loop()
