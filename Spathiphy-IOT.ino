@@ -61,8 +61,6 @@ void setup()
   Serial.println(WiFi.SSID());              
   Serial.print("IP address:\t");
   Serial.println(WiFi.localIP());
-
-  testHTTP();
 }
 
 void loop()
@@ -70,12 +68,17 @@ void loop()
   DHT.read22(DHT22_PIN);
   float hum = DHT.getHumidity();
   float temp = DHT.getTemperature();
-  float light = LUX.readLightLevel();//Realizamos una lectura del sensor
+  float light = LUX.readLightLevel();
   Serial.println("Temperatura: " + String(temp) + "°C\t\tHumedad: " + String(hum) + "%\t\tLuminosidad: " + String(light) + "lx");  
-  blink();
+  unsigned long timeBegin = millis();
+  testHTTP();
+  unsigned long timeFinish = millis();
+  int httpTime = timeFinish - timeBegin;
+  Serial.println(httpTime);
+  blink(1850 - httpTime);
 }
 
-void blink()
+void blink(int remainingDelay)
 {
   digitalWrite(LED_BUILTIN, LOW);
   delay(50);
@@ -84,20 +87,21 @@ void blink()
   digitalWrite(LED_BUILTIN, LOW);
   delay(50);
   digitalWrite(LED_BUILTIN, HIGH);
-  delay(1850);
+  if(remainingDelay > 0){
+    delay(remainingDelay);
+  }
 }
 
 void testHTTP(){
   HTTPClient http;
 
-  http.begin(wifiClient, "http://jsonplaceholder.typicode.com/users/1");  //Specify request destination
+  http.begin(wifiClient, "http://jsonplaceholder.typicode.com/posts/1");  //Specify request destination
   int httpCode = http.GET();                                  //Send the request
  
   if (httpCode > 0) { //Check the returning code
  
     String payload = http.getString();   //Get the request response payload
     Serial.println(payload);             //Print the response payload
- 
   }
  
   http.end();   //Close connection
