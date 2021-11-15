@@ -1,9 +1,13 @@
+#include <Arduino_JSON.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
 #include <ESP8266HTTPClient.h>
 #include "DHTStable.h"
 #include <Wire.h>
 #include <BH1750.h>
+
+String MY_PRIVATE_ID = "1";
+String SERVER_ADDRESS = "http://149.93.117.12/planta/" + MY_PRIVATE_ID;
 
 #define DHT22_PIN D0
 
@@ -75,7 +79,7 @@ void loop()
   unsigned long timeFinish = millis();
   int httpTime = timeFinish - timeBegin;
   Serial.println(httpTime);
-  blink(1850 - httpTime);
+  blink(2000 - httpTime);
 }
 
 void blink(int remainingDelay)
@@ -95,13 +99,22 @@ void blink(int remainingDelay)
 void testHTTP(){
   HTTPClient http;
 
-  http.begin(wifiClient, "http://jsonplaceholder.typicode.com/posts/1");  //Specify request destination
-  int httpCode = http.GET();                                  //Send the request
+  http.begin(wifiClient, SERVER_ADDRESS);  //Specify request destination
+  
+  int httpCode = http.PUT("");               //Send the request
  
   if (httpCode > 0) { //Check the returning code
  
     String payload = http.getString();   //Get the request response payload
-    Serial.println(payload);             //Print the response payload
+    JSONVar response = JSON.parse(payload);
+
+    if (JSON.typeof(response) != "undefined")
+    {
+        if (response.hasOwnProperty("title"))
+        {
+          Serial.println(response["title"]);
+        }
+    }
   }
  
   http.end();   //Close connection
