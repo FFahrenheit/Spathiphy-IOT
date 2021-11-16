@@ -7,9 +7,12 @@
 #include <BH1750.h>
 
 String MY_PRIVATE_ID = "1";
-String SERVER_ADDRESS = "http://149.93.117.12/planta/" + MY_PRIVATE_ID;
+String SERVER_ADDRESS = "http://142.93.117.12/api/planta/" + MY_PRIVATE_ID;
 
 #define DHT22_PIN D0
+#define FOCO D8
+#define VENTILADOR D7
+#define BOMBA D6
 
 char *redes[2][2] = {
   {"TheCoolestWiFiLM", "LopezMurillo128"},
@@ -22,13 +25,24 @@ WiFiClient wifiClient;
 DHTStable DHT;
 BH1750 LUX(0x1D);
 
+float hum=0.0f, temp=0.0f, light=0.0f;
+double max_hum = 0.0f, min_hum = 0.0f, max_temp = 0.0f, min_temp = 0.0f;
+
 void setup()
 {
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(FOCO, OUTPUT);
+  pinMode(VENTILADOR, OUTPUT);
+  pinMode(BOMBA, OUTPUT);
+
   delay(500);
   Wire.begin(D2, D1);
   Serial.begin(115200);
   Serial.println("Sensors starting");
+
+  digitalWrite(FOCO, LOW);
+  digitalWrite(VENTILADOR, LOW);
+  digitalWrite(BOMBA, LOW);
 
   while(!LUX.begin())
   {
@@ -65,17 +79,21 @@ void setup()
   Serial.println(WiFi.SSID());              
   Serial.print("IP address:\t");
   Serial.println(WiFi.localIP());
+
+  config();
 }
 
 void loop()
 {
   DHT.read22(DHT22_PIN);
-  float hum = DHT.getHumidity();
-  float temp = DHT.getTemperature();
-  float light = LUX.readLightLevel();
+  hum = DHT.getHumidity();
+  temp = DHT.getTemperature();
+  light = LUX.readLightLevel();
   Serial.println("Temperatura: " + String(temp) + "°C\t\tHumedad: " + String(hum) + "%\t\tLuminosidad: " + String(light) + "lx");  
   unsigned long timeBegin = millis();
-  testHTTP();
+  
+  sendData();
+  
   unsigned long timeFinish = millis();
   int httpTime = timeFinish - timeBegin;
   Serial.println(httpTime);
@@ -96,26 +114,68 @@ void blink(int remainingDelay)
   }
 }
 
-void testHTTP(){
+void sendData(){
   HTTPClient http;
+  String body = "temperatura=" + String(temp) + "&humedad=" + String(hum) + "&luminosidad=" + String(light);
+  Serial.println(body); 
 
   http.begin(wifiClient, SERVER_ADDRESS);  //Specify request destination
+  http.addHeader("Content-Type", "application/x-www-form-urlencoded");
   
-  int httpCode = http.PUT("");               //Send the request
- 
+  int httpCode = http.PUT(body);               //Send the request
+  Serial.println("Response: " + String(httpCode));
+
+
   if (httpCode > 0) { //Check the returning code
  
     String payload = http.getString();   //Get the request response payload
     JSONVar response = JSON.parse(payload);
 
-    if (JSON.typeof(response) != "undefined")
+    if (JSON.typeof(response) != "undefined" && response.hasOwnProperty("title"))
     {
-        if (response.hasOwnProperty("title"))
-        {
-          Serial.println(response["title"]);
-        }
+      Serial.println(response["title"]);
+    }
+    else
+    {
+      Serial.println(response);
     }
   }
  
+  http.end();   //Close connection
+}
+
+void config(){
+  HTTPClient http;
+  http.begin(wifiClient, SERVER_ADDRESS + "/config");  //Specify request destination
+  int httpCode;
+  do{
+    httpCode = http.GET();                  //Send the request
+    Serial.println("Response: " + String(httpCode));
+
+  if (httpCode > 0) { //Check the returning code
+ 
+    String payload = http.getString();   //Get the request response payload
+    JSONVar response = JSON.parse(payload);
+
+    if (JSON.typeof(response) != "undefined" && response.hasOwnProperty("max_temp"))
+    {
+      max_temp = (double) response["max_temp"];
+      min_temp = (double) response["min_temp"];
+      max_hum = (double) response["max_hum"];
+      min_hum = (double) response["min_hum"];
+
+      Serial.println("Maxima temperatura: " + String(max_temp));
+      Serial.println("Minima temperatura: " + String(min_temp));
+      Serial.println("Maxima humedad: " + String(max_hum));
+      Serial.println("Minima humedad: " + String(min_hum));
+    }
+    else
+    {
+      Serial.println(response);
+    }
+  }
+ 
+  }while(httpCode < 0);
+  
   http.end();   //Close connection
 }
