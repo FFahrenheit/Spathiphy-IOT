@@ -92,12 +92,46 @@ void loop()
   Serial.println("Temperatura: " + String(temp) + "°C\t\tHumedad: " + String(hum) + "%\t\tLuminosidad: " + String(light) + "lx");  
   unsigned long timeBegin = millis();
   
+  control();
   sendData();
   
   unsigned long timeFinish = millis();
   int httpTime = timeFinish - timeBegin;
-  Serial.println(httpTime);
-  blink(2000 - httpTime);
+  // Serial.println(httpTime);
+  blink(5000 - httpTime);
+}
+
+void control()
+{
+  if(temp > max_temp) //Prender el ventilador
+  {
+    Serial.println("Ventilador encendido");
+    digitalWrite(FOCO, LOW);
+    digitalWrite(VENTILADOR, HIGH);
+  }
+  else if(temp < min_temp) //Prender el foco
+  {
+    Serial.println("Foco encendido");
+    digitalWrite(FOCO, HIGH);
+    digitalWrite(VENTILADOR, LOW);
+  }
+  else
+  {
+    Serial.println("Temperatura ok");
+    digitalWrite(FOCO, LOW);
+    digitalWrite(VENTILADOR, LOW);
+  }
+  
+  if(!(hum > min_hum && hum < max_hum))
+  {
+    Serial.println("Bomba encendida");
+    digitalWrite(BOMBA, HIGH);
+  }
+  else
+  {
+    Serial.println("Humedad ok");
+    digitalWrite(BOMBA, LOW);
+  }
 }
 
 void blink(int remainingDelay)
@@ -109,7 +143,9 @@ void blink(int remainingDelay)
   digitalWrite(LED_BUILTIN, LOW);
   delay(50);
   digitalWrite(LED_BUILTIN, HIGH);
-  if(remainingDelay > 0){
+  
+  if(remainingDelay > 0)
+  {
     delay(remainingDelay);
   }
 }
